@@ -1,23 +1,38 @@
 import { useDeviceStore } from "../store/deviceStore";
 
-type KeyProps = {
+type Props = {
   label: string;
   index: number;
 };
 
-function Key({ label, index }: KeyProps) {
-  const { selectedKey, setSelectedKey } = useDeviceStore();
+function formatLabel(label: string) {
+  return label
+    .replace("KC_", "")
+    .replace("ENTER", "Enter")
+    .replace("ESC", "Esc")
+    .replace("SPACE", "Space")
+    .replace("BSPC", "⌫")
+    .replace("TAB", "Tab");
+}
 
+function Key({ label, index }: Props) {
+  const { selectedKey, setSelectedKey } = useDeviceStore();
   const isSelected = selectedKey === index;
 
   return (
     <div
       onClick={() => setSelectedKey(index)}
-      className={`w-full h-16 rounded-lg flex items-center justify-center cursor-pointer
-        ${isSelected ? "bg-blue-500" : "bg-gray-700 hover:bg-gray-600"}
+      className={`
+        w-16 h-16 rounded-xl flex items-center justify-center
+        text-sm font-medium cursor-pointer
+        transition-all duration-200
+
+        ${isSelected
+          ? "bg-blue-500 scale-105 shadow-lg"
+          : "bg-gray-700 hover:bg-gray-600"}
       `}
     >
-      {label}
+      {formatLabel(label)}
     </div>
   );
 }

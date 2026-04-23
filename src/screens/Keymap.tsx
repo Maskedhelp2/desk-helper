@@ -2,50 +2,38 @@ import { useDeviceStore } from "../store/deviceStore";
 import Key from "../components/Key";
 
 function Keymap() {
-  const { keymaps, currentLayer } = useDeviceStore();
+  const { keymaps, currentLayer, selectedKey } = useDeviceStore();
   const keymap = keymaps[currentLayer];
 
   return (
-    <div>
-      <h1 className="text-2xl mb-6">Keymap</h1>
+    <div className="flex h-full">
 
-      <div className="grid grid-cols-4 gap-2 w-fit">
+      {/* LEFT: Keymap */}
+      <div className="flex-1 flex items-center justify-center">
 
-        {/* Row 1 */}
-        <Key label={keymap[0]} index={0} />
-        <Key label={keymap[1]} index={1} />
-        <Key label={keymap[2]} index={2} />
-        <Key label={keymap[3]} index={3} />
-
-        {/* Row 2 */}
-        <Key label={keymap[4]} index={4} />
-        <Key label={keymap[5]} index={5} />
-        <Key label={keymap[6]} index={6} />
-        <Key label={keymap[7]} index={7} />
-
-        {/* Row 3 */}
-        <Key label={keymap[8]} index={8} />
-        <Key label={keymap[9]} index={9} />
-        <Key label={keymap[10]} index={10} />
-        <Key label={keymap[11]} index={11} />
-
-        {/* Row 4 */}
-        <Key label={keymap[12]} index={12} />
-        <Key label={keymap[13]} index={13} />
-        <Key label={keymap[14]} index={14} />
-
-        {/* Enter (spans 2 rows) */}
-        <div className="row-span-2">
-          <Key label={keymap[15]} index={15} />
+        <div className="bg-gray-800 p-6 rounded-2xl shadow-xl">
+          <div className="grid grid-cols-4 gap-4">
+            {keymap.map((key, index) => (
+              <Key key={index} label={key} index={index} />
+            ))}
+          </div>
         </div>
 
-        {/* Bottom Row */}
-        <div className="col-span-2">
-          <Key label={keymap[16]} index={16} />
-        </div>
-
-        <Key label={"."} index={16} />
       </div>
+
+      {/* RIGHT: Empty State (center message like design) */}
+      {selectedKey === null && (
+        <div className="flex-1 flex items-center justify-center text-gray-400">
+          <div className="text-center">
+            <div className="text-4xl mb-4">🖱️</div>
+            <p className="text-lg">Select a key</p>
+            <p className="text-sm mt-2">
+              Click on any key to configure it
+            </p>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

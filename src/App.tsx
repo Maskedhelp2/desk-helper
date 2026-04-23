@@ -32,7 +32,7 @@ function App() {
     <div className="flex flex-col h-screen bg-gray-900 text-white">
 
       {/* Top Bar */}
-      <div className="h-12 bg-gray-800 flex items-center px-4 justify-between">
+      <div className="h-12 bg-gray-800 flex items-center px-6 justify-between border-b border-gray-700">
 
         {/* Left: Connection */}
         <div className="flex items-center gap-3">
@@ -76,18 +76,29 @@ function App() {
       </div>
 
       {/* Main Layout */}
-      <div className="flex flex-1">
+      <div className="flex-1 flex bg-gray-900">
 
         {/* Sidebar */}
         <div className="w-60 bg-gray-800 p-4">
-          <h2 className="text-xl font-bold mb-4">Menu</h2>
-          <ul className="space-y-2">
-            <li><Link to="/">Keymap</Link></li>
-            <li><Link to="/encoder">Encoder</Link></li>
-            <li><Link to="/oled">OLED</Link></li>
-            <li><Link to="/macros">Macros</Link></li>
-            <li><Link to="/profiles">Profiles</Link></li>
-            <li><Link to="/firmware">Firmware</Link></li>
+          <h2 className="text-xl font-bold mb-6">Menu</h2>
+          <ul className="space-y-3">
+            {[
+              ["Keymap", "/"],
+              ["Encoder", "/encoder"],
+              ["OLED", "/oled"],
+              ["Macros", "/macros"],
+              ["Profiles", "/profiles"],
+              ["Firmware", "/firmware"],
+            ].map(([name, path]) => (
+              <li key={name}>
+                <Link
+                  to={path}
+                  className="block px-3 py-2 rounded hover:bg-gray-700 transition"
+                >
+                  {name}
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
 
@@ -127,87 +138,60 @@ function App() {
           </div>
 
           {/* Right Panel */}
-          <div className="w-72 bg-gray-800 p-4">
-            <h2 className="text-lg font-bold mb-4">Key Settings</h2>
+          <div className="w-80 bg-gray-800 p-6 border-l border-gray-700">
 
-            {selectedKey !== null ? (
-              <div>
+  <h2 className="text-xl font-semibold mb-4">Key Settings</h2>
 
-                {/* Tabs */}
-                <div className="flex gap-2 mb-4">
-                  {["standard", "media", "macro", "layer"].map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={`px-2 py-1 text-sm rounded ${
-                        activeTab === tab
-                          ? "bg-blue-500"
-                          : "bg-gray-700 hover:bg-gray-600"
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
+  {selectedKey !== null ? (
+    <div>
 
-                {/* Standard */}
-                {activeTab === "standard" && (
-                  <select
-                    disabled={!connected}
-                    className="w-full p-2 bg-gray-700 rounded text-white"
-                    value={keymap[selectedKey]}
-                    onChange={(e) => setKey(selectedKey, e.target.value)}
-                  >
-                    {keyOptions.map((key) => (
-                      <option key={key} value={key}>
-                        {key}
-                      </option>
-                    ))}
-                  </select>
-                )}
+      {/* Tabs */}
+      <div className="flex gap-2 mb-4">
+        {["standard", "media", "macro", "layer"].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-3 py-1 text-sm rounded ${
+              activeTab === tab
+                ? "bg-blue-500"
+                : "bg-gray-700 hover:bg-gray-600"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
 
-                {/* Media */}
-                {activeTab === "media" && (
-                  <div className="grid grid-cols-3 gap-2">
-                    {["Play", "Next", "Prev", "Vol+", "Vol-", "Mute"].map((item) => (
-                      <button
-                        key={item}
-                        disabled={!connected}
-                        className="bg-gray-700 p-2 rounded hover:bg-gray-600 disabled:opacity-50"
-                        onClick={() => setKey(selectedKey, item)}
-                      >
-                        {item}
-                      </button>
-                    ))}
-                  </div>
-                )}
+      {/* Dropdown */}
+      <label className="text-sm text-gray-400">Key Action</label>
+      <select
+        disabled={!connected}
+        className="w-full mt-2 p-2 bg-gray-700 rounded text-white"
+        value={keymap[selectedKey]}
+        onChange={(e) => setKey(selectedKey, e.target.value)}
+      >
+        {keyOptions.map((key) => (
+          <option key={key} value={key}>
+            {key}
+          </option>
+        ))}
+      </select>
 
-                {/* Macro */}
-                {activeTab === "macro" && (
-                  <p className="text-gray-400">Macro feature coming soon</p>
-                )}
+      {/* Preview */}
+      <div className="mt-6">
+        <p className="text-sm text-gray-400 mb-2">Preview</p>
+        <div className="w-16 h-16 bg-gray-700 rounded-xl flex items-center justify-center">
+          {keymap[selectedKey].replace("KC_", "")}
+        </div>
+      </div>
 
-                {/* Layer */}
-                {activeTab === "layer" && (
-                  <div className="flex flex-col gap-2">
-                    {[0, 1, 2, 3].map((layer) => (
-                      <button
-                        key={layer}
-                        disabled={!connected}
-                        className="bg-gray-700 p-2 rounded hover:bg-gray-600 disabled:opacity-50"
-                        onClick={() => setKey(selectedKey, `LAYER_${layer}`)}
-                      >
-                        Switch to Layer {layer}
-                      </button>
-                    ))}
-                  </div>
-                )}
+    </div>
+  ) : (
+    <p className="text-gray-400">Select a key</p>
+  )}
 
-              </div>
-            ) : (
-              <p className="text-gray-400">Select a key</p>
-            )}
-          </div>
+</div>
+
 
         </div>
       </div>
