@@ -7,17 +7,24 @@ type Profile = {
 };
 
 type DeviceState = {
+  // Device
   connected: boolean;
+  connect: () => void;
+  disconnect: () => void;
+  toggleConnection: () => void;
+
+  // Layers
   currentLayer: number;
   layers: string[];
+  setLayer: (layer: number) => void;
 
+  // Keymaps
   keymaps: string[][];
+  setKey: (index: number, value: string) => void;
 
+  // Selection
   selectedKey: number | null;
   setSelectedKey: (index: number) => void;
-
-  setKey: (index: number, value: string) => void;
-  setLayer: (layer: number) => void;
 
   // Unsaved changes
   hasUnsavedChanges: boolean;
@@ -27,7 +34,6 @@ type DeviceState = {
   // Profiles
   profiles: Profile[];
   currentProfile: string;
-
   createProfile: (name: string) => void;
   loadProfile: (name: string) => void;
   deleteProfile: (name: string) => void;
@@ -38,10 +44,21 @@ type DeviceState = {
 };
 
 export const useDeviceStore = create<DeviceState>((set, get) => ({
-  connected: mockBackend.connected,
+  // Device
+  connected: true,
+
+  connect: () => set({ connected: true }),
+  disconnect: () => set({ connected: false }),
+  toggleConnection: () =>
+    set((state) => ({ connected: !state.connected })),
+
+  // Layers
   currentLayer: 0,
   layers: mockBackend.layers,
 
+  setLayer: (layer) => set({ currentLayer: layer }),
+
+  // Keymaps
   keymaps: [
     Array(17).fill("KC_1"),
     Array(17).fill("KC_2"),
@@ -49,15 +66,13 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
     Array(17).fill("KC_4"),
   ],
 
-  selectedKey: null,
-
-  setSelectedKey: (index) => set({ selectedKey: index }),
-
   setKey: (index, value) =>
     set((state) => {
       const newKeymaps = [...state.keymaps];
+
       const layerCopy = [...newKeymaps[state.currentLayer]];
       layerCopy[index] = value;
+
       newKeymaps[state.currentLayer] = layerCopy;
 
       return {
@@ -66,9 +81,11 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
       };
     }),
 
-  setLayer: (layer) => set({ currentLayer: layer }),
+  // Selection
+  selectedKey: null,
+  setSelectedKey: (index) => set({ selectedKey: index }),
 
-  // Unsaved changes
+  // Unsaved
   hasUnsavedChanges: false,
 
   setUnsavedChanges: (value) => set({ hasUnsavedChanges: value }),
@@ -125,7 +142,7 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
       profiles: state.profiles.filter((p) => p.name !== name),
     })),
 
-  // Export profile
+  // Export
   exportProfile: () => {
     const state = get();
 
@@ -149,7 +166,7 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
     URL.revokeObjectURL(url);
   },
 
-  // Import profile
+  // Import
   importProfile: (data) =>
     set((state) => ({
       profiles: [...state.profiles, data],

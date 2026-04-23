@@ -20,6 +20,8 @@ function App() {
     layers,
     hasUnsavedChanges,
     saveChanges,
+    connected,
+    toggleConnection,
   } = useDeviceStore();
 
   const keymap = keymaps[currentLayer];
@@ -32,11 +34,27 @@ function App() {
       {/* Top Bar */}
       <div className="h-12 bg-gray-800 flex items-center px-4 justify-between">
 
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-          <span className="text-sm">Device Connected</span>
+        {/* Left: Connection */}
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-2 h-2 rounded-full ${
+              connected ? "bg-green-500" : "bg-red-500"
+            }`}
+          ></div>
+
+          <span className="text-sm">
+            {connected ? "Device Connected" : "Device Disconnected"}
+          </span>
+
+          <button
+            onClick={toggleConnection}
+            className="ml-3 px-2 py-1 text-xs bg-gray-700 rounded hover:bg-gray-600"
+          >
+            {connected ? "Disconnect" : "Connect"}
+          </button>
         </div>
 
+        {/* Right */}
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-400">
             Layer: {currentLayer}
@@ -44,10 +62,11 @@ function App() {
 
           <button
             onClick={saveChanges}
+            disabled={!hasUnsavedChanges}
             className={`px-3 py-1 rounded ${
               hasUnsavedChanges
                 ? "bg-yellow-500 text-black"
-                : "bg-gray-600 text-gray-300"
+                : "bg-gray-600 text-gray-300 cursor-not-allowed"
             }`}
           >
             Save
@@ -131,9 +150,10 @@ function App() {
                   ))}
                 </div>
 
-                {/* Tab Content */}
+                {/* Standard */}
                 {activeTab === "standard" && (
                   <select
+                    disabled={!connected}
                     className="w-full p-2 bg-gray-700 rounded text-white"
                     value={keymap[selectedKey]}
                     onChange={(e) => setKey(selectedKey, e.target.value)}
@@ -146,12 +166,14 @@ function App() {
                   </select>
                 )}
 
+                {/* Media */}
                 {activeTab === "media" && (
                   <div className="grid grid-cols-3 gap-2">
                     {["Play", "Next", "Prev", "Vol+", "Vol-", "Mute"].map((item) => (
                       <button
                         key={item}
-                        className="bg-gray-700 p-2 rounded hover:bg-gray-600"
+                        disabled={!connected}
+                        className="bg-gray-700 p-2 rounded hover:bg-gray-600 disabled:opacity-50"
                         onClick={() => setKey(selectedKey, item)}
                       >
                         {item}
@@ -160,16 +182,19 @@ function App() {
                   </div>
                 )}
 
+                {/* Macro */}
                 {activeTab === "macro" && (
                   <p className="text-gray-400">Macro feature coming soon</p>
                 )}
 
+                {/* Layer */}
                 {activeTab === "layer" && (
                   <div className="flex flex-col gap-2">
                     {[0, 1, 2, 3].map((layer) => (
                       <button
                         key={layer}
-                        className="bg-gray-700 p-2 rounded hover:bg-gray-600"
+                        disabled={!connected}
+                        className="bg-gray-700 p-2 rounded hover:bg-gray-600 disabled:opacity-50"
                         onClick={() => setKey(selectedKey, `LAYER_${layer}`)}
                       >
                         Switch to Layer {layer}
