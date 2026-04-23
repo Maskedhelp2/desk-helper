@@ -13,12 +13,13 @@ function Profiles() {
   } = useDeviceStore();
 
   const [newName, setNewName] = useState("");
+  const [error, setError] = useState("");
 
   return (
     <div>
       <h1 className="text-2xl mb-6">Profiles</h1>
 
-      {/* Export Button */}
+      {/* Export */}
       <button
         className="bg-yellow-500 px-4 py-2 rounded mb-4 text-black"
         onClick={exportProfile}
@@ -26,7 +27,7 @@ function Profiles() {
         Export Current Profile
       </button>
 
-      {/* Import Input */}
+      {/* Import */}
       <input
         type="file"
         accept=".json"
@@ -40,15 +41,26 @@ function Profiles() {
           reader.onload = (event) => {
             try {
               const data = JSON.parse(event.target?.result as string);
+
+              if (!data.name || !data.keymaps) {
+                throw new Error();
+              }
+
               importProfile(data);
-            } catch (err) {
-              alert("Invalid JSON file");
+              setError("");
+            } catch {
+              setError("Invalid profile file");
             }
           };
 
           reader.readAsText(file);
         }}
       />
+
+      {/* Error */}
+      {error && (
+        <p className="text-red-400 mb-4">{error}</p>
+      )}
 
       {/* Create Profile */}
       <div className="mb-6 flex gap-2">
@@ -62,10 +74,16 @@ function Profiles() {
         <button
           className="bg-blue-500 px-4 py-2 rounded"
           onClick={() => {
-            if (newName.trim()) {
-              createProfile(newName);
-              setNewName("");
+            if (!newName.trim()) return;
+
+            if (profiles.some((p) => p.name === newName)) {
+              setError("Profile name already exists");
+              return;
             }
+
+            createProfile(newName);
+            setNewName("");
+            setError("");
           }}
         >
           Create
@@ -94,7 +112,17 @@ function Profiles() {
 
               <button
                 className="bg-red-500 px-3 py-1 rounded"
-                onClick={() => deleteProfile(profile.name)}
+                onClick={() => {
+                  if (profile.name === currentProfile) {
+                    setError("Cannot delete active profile");
+                    return;
+                  }
+
+                  if (confirm("Delete this profile?")) {
+                    deleteProfile(profile.name);
+                    setError("");
+                  }
+                }}
               >
                 Delete
               </button>
