@@ -2,12 +2,35 @@ import { useDeviceStore } from "../store/deviceStore";
 import { keyCategories } from "../data/keyCategories";
 
 function Encoder() {
-  const { encoder, setEncoder } = useDeviceStore();
+  const {
+    encoder,
+    setEncoder,
+    layers,
+    currentLayer,
+    setLayer,
+  } = useDeviceStore();
 
   const options = Object.values(keyCategories).flat();
 
   return (
     <div className="w-full max-w-md space-y-6">
+
+      {/* 🔥 Layer Selector */}
+      <div className="flex gap-2">
+        {layers.map((layer, i) => (
+          <button
+            key={i}
+            onClick={() => setLayer(i)}
+            className={`px-3 py-1 rounded ${
+              currentLayer === i
+                ? "bg-blue-500"
+                : "bg-gray-700"
+            }`}
+          >
+            {layer}
+          </button>
+        ))}
+      </div>
 
       <h2 className="text-lg font-semibold">Encoder Settings</h2>
 

@@ -57,10 +57,12 @@ type DeviceState = {
     };
     logo: string | null;
     perProfile: boolean;
+    effect: "static" | "pulse" | "scroll";
   };
   setOledLayout: (zone: "A" | "B" | "C", value: string) => void;
   setOledLogo: (data: string | null) => void;
   setOledProfileMode: (val: boolean) => void;
+  setOledEffect: (effect: "static" | "pulse" | "scroll") => void;
 };
 
 const STORAGE_KEY = "numpad-app-data";
@@ -289,6 +291,7 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
     },
     logo: null,
     perProfile: false,
+    effect: "static",
   },
 
   setOledLayout: (zone, value) =>
@@ -317,5 +320,13 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
         ...state.oled,
         perProfile: val,
       },
+    })),
+
+  setOledEffect: (effect) =>
+    set((state) => ({
+        oled: {
+            ...state.oled,
+            effect,
+        },
     })),
 }));
