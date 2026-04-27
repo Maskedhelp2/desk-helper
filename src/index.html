@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Desk Helper</title>
+</head>
+<body>
+  <h1>Desk Helper Running ✅</h1>
+
+  <button onclick="test()">Test Device</button>
+
+  <script>
+    async function test() {
+      const res = await window.__TAURI__.invoke("get_version");
+      alert(res);
+    }
+  </script>
+</body>
+</html>
