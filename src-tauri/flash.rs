@@ -1,5 +1,7 @@
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::thread::sleep;
+use std::time::{Duration, Instant};
 
 // =====================================
 // Reboot Device Into Bootloader
@@ -27,13 +29,110 @@ pub fn reboot_to_bootloader()
 }
 
 // =====================================
-// Detect Bootloader Drive
-// macOS path
+// Candidate mount paths by OS
+// =====================================
+
+fn bootloader_paths() -> Vec<PathBuf> {
+
+    let mut paths = Vec::new();
+
+    // macOS
+    paths.push(
+        PathBuf::from("/Volumes/RPI-RP2")
+    );
+
+    // Linux common locations
+    paths.push(
+        PathBuf::from("/media/RPI-RP2")
+    );
+
+    paths.push(
+        PathBuf::from("/mnt/RPI-RP2")
+    );
+
+    // Windows common drive letters
+    for letter in b'D'..=b'Z' {
+        let drive =
+            format!("{}:\\", letter as char);
+
+        paths.push(
+            PathBuf::from(drive)
+        );
+    }
+
+    paths
+}
+
+// =====================================
+// Detect mounted RPI-RP2 drive
+// =====================================
+
+pub fn detect_bootloader_drive()
+-> Option<PathBuf> {
+
+    for path in bootloader_paths() {
+
+        if path.exists() {
+
+            let name = path
+                .file_name()
+                .map(|n| n.to_string_lossy()
+                .to_string());
+
+            // macOS/Linux mounted folder
+            if let Some(folder) = name {
+                if folder == "RPI-RP2" {
+                    return Some(path);
+                }
+            }
+
+            // Windows root drive:
+            // accept existing drive
+            if path.to_string_lossy()
+                .ends_with(":\\")
+            {
+                return Some(path);
+            }
+        }
+    }
+
+    None
+}
+
+// =====================================
+// Public status check
 // =====================================
 
 pub fn is_bootloader_present() -> bool {
-    Path::new("/Volumes/RPI-RP2")
-        .exists()
+    detect_bootloader_drive().is_some()
+}
+
+// =====================================
+// Wait for bootloader mount
+// =====================================
+
+pub fn wait_for_bootloader(
+    timeout_secs: u64
+) -> Result<PathBuf, String> {
+
+    let start = Instant::now();
+
+    while start.elapsed()
+        < Duration::from_secs(timeout_secs)
+    {
+        if let Some(path) =
+            detect_bootloader_drive()
+        {
+            return Ok(path);
+        }
+
+        sleep(Duration::from_millis(300));
+    }
+
+    Err(
+        "Bootloader drive not detected"
+        .to_string()
+    )
 }
 
 // =====================================
@@ -54,18 +153,48 @@ pub fn flash_firmware(
         );
     }
 
-    if !is_bootloader_present() {
+    let extension =
+        source.extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("");
+
+    if extension.to_lowercase() != "uf2" {
         return Err(
-            "Bootloader drive not mounted"
+            "File must be .uf2"
             .to_string()
         );
     }
 
-    let target =
-        "/Volumes/RPI-RP2/FIRMWARE.UF2";
+    // wait for device to appear
+    let mount =
+        wait_for_bootloader(5)?;
 
-    fs::copy(source, target)
+    // preserve original filename
+    let filename =
+        source.file_name()
+        .ok_or("Invalid filename")?;
+
+    let target =
+        mount.join(filename);
+
+    fs::copy(source, &target)
         .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+// =====================================
+// One-click full update flow
+// =====================================
+
+pub fn reboot_and_flash(
+    source_path: String
+) -> Result<(), String> {
+
+    reboot_to_bootloader()?;
+
+    // allow reboot to begin
+    sleep(Duration::from_secs(2));
+
+    flash_firmware(source_path)
 }
