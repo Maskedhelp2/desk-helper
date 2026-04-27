@@ -9,6 +9,8 @@ type Props = {
 function Key({ label, index }: Props) {
   const { setKey, setSelectedKey, selectedKey } = useDeviceStore();
 
+  const { macros } = useDeviceStore();
+
   const handleClick = () => {
     // 1️⃣ select key
     setSelectedKey(index);
@@ -43,10 +45,20 @@ function Key({ label, index }: Props) {
   return (
     <button
       onClick={handleClick}
-      className={`w-14 h-14 rounded text-white
-        ${isSelected ? "bg-blue-500" : "bg-gray-800 hover:bg-gray-600"}`}
+      className={`w-14 h-14 rounded text-white ${
+        label.startsWith("MACRO_")
+          ? "bg-purple-600 hover:bg-purple-500"
+          : "bg-gray-800 hover:bg-gray-600"
+      }`}
     >
-      {label}
+      {(() => {
+        if (label.startsWith("MACRO_")) {
+            const id = label.replace("MACRO_", "");
+            const macro = macros.find((m) => m.id.toString() === id);
+            return macro ? macro.name : "Macro";
+        }
+        return label.replace("KC_", "");
+    })()}
     </button>
   );
 }
