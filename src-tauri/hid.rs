@@ -1,18 +1,383 @@
-use hidapi::{HidApi, HidDevice};
+use hidapi::HidDevice;
+use crate::hid::find_device;
 
-pub const VID: u16 = 0xFEED;
-pub const PID: u16 = 0x0001;
+// =====================================
+// Command IDs (match firmware exactly)
+// =====================================
 
-pub fn find_device() -> Option<HidDevice> {
-    let api = HidApi::new().ok()?;
+pub const CMD_GET_VERSION: u8 = 0x01;
+pub const CMD_GET_LAYOUT: u8 = 0x02;
+pub const CMD_SET_KEY: u8 = 0x03;
+pub const CMD_SAVE: u8 = 0x04;
 
-    for device in api.device_list() {
-        if device.vendor_id() == VID &&
-           device.product_id() == PID
-        {
-            return device.open_device(&api).ok();
+pub const CMD_GET_ENCODER: u8 = 0x05;
+pub const CMD_SET_ENCODER: u8 = 0x06;
+
+pub const CMD_GET_MACRO: u8 = 0x07;
+pub const CMD_SET_MACRO: u8 = 0x08;
+
+pub const CMD_SET_OLED_MODE: u8 = 0x09;
+pub const CMD_SET_OLED_FRAME: u8 = 0x0A;
+
+pub const CMD_GET_PROFILE_NAME: u8 = 0x0B;
+pub const CMD_SET_PROFILE_NAME: u8 = 0x0C;
+
+pub const CMD_FACTORY_RESET: u8 = 0x0D;
+pub const CMD_BOOTLOADER: u8 = 0x0E;
+
+pub const CMD_GET_PROFILE: u8 = 0x0F;
+pub const CMD_SET_PROFILE: u8 = 0x10;
+
+// =====================================
+// Helpers
+// =====================================
+
+pub fn build_packet(cmd: u8, payload: &[u8]) -> [u8; 32] {
+    let mut packet = [0u8; 32];
+    packet[0] = cmd;
+
+    for (i, byte) in payload.iter().enumerate() {
+        if i + 1 < 32 {
+            packet[i + 1] = *byte;
         }
     }
 
-    None
+    packet
+}
+
+pub fn send_command(
+    device: &HidDevice,
+    packet: [u8; 32],
+) -> Result<[u8; 32], String> {
+
+    device.write(&packet)
+        .map_err(|e| format!("Write failed: {}", e))?;
+
+    let mut response = [0u8; 32];
+
+    device.read_timeout(&mut response, 1000)
+        .map_err(|e| format!("Read failed: {}", e))?;
+
+    Ok(response)
+}
+
+fn device() -> Result<HidDevice, String> {
+    find_device().ok_or("No device connected".to_string())
+}
+
+// =====================================
+// Version
+// =====================================
+
+pub fn get_version() -> Result<String, String> {
+    let dev = device()?;
+    let packet = build_packet(CMD_GET_VERSION, &[]);
+    let res = send_command(&dev, packet)?;
+
+    Ok(format!("{}.{}", res[1], res[2]))
+}
+
+// =====================================
+// Profile
+// =====================================
+
+pub fn get_profile() -> Result<u8, String> {
+    let dev = device()?;
+    let packet = build_packet(CMD_GET_PROFILE, &[]);
+    let res = send_command(&dev, packet)?;
+    Ok(res[1])
+}
+
+pub fn set_profile(profile: u8) -> Result<(), String> {
+    let dev = device()?;
+    let packet = build_packet(CMD_SET_PROFILE, &[profile]);
+    send_command(&dev, packet)?;
+    Ok(())
+}
+
+// =====================================
+// Profile Names
+// =====================================
+
+pub fn get_profile_name(profile: u8) -> Result<String, String> {
+    let dev = device()?;
+
+    let packet = build_packet(
+        CMD_GET_PROFILE_NAME,
+        &[profile]
+    );
+
+    let res = send_command(&dev, packet)?;
+
+    let name = String::from_utf8_lossy(&res[2..])  // skip cmd + profile
+        .trim_matches(char::from(0))
+        .to_string();
+
+    Ok(name)
+}
+
+pub fn set_profile_name(
+    profile: u8,
+    name: String
+) -> Result<(), String> {
+
+    let dev = device()?;
+
+    let mut payload = vec![profile];
+    payload.extend(name.as_bytes());
+
+    let packet = build_packet(
+        CMD_SET_PROFILE_NAME,
+        &payload
+    );
+
+    send_command(&dev, packet)?;
+    Ok(())
+}
+
+// =====================================
+// Layout (20 keys)
+// =====================================
+
+pub fn get_layout(profile: u8) -> Result<Vec<u16>, String> {
+
+    let dev = device()?;
+    let mut keys = Vec::new();
+
+    for offset in [0u8, 7u8, 14u8] {
+
+        let packet = build_packet(
+            CMD_GET_LAYOUT,
+            &[profile, offset]
+        );
+
+        let res = send_command(&dev, packet)?;
+
+        // data starts after:
+        // [cmd, profile, chunk, total_chunks]
+        let start = 4;
+
+        for i in 0..7 {
+            if keys.len() >= 20 {
+                break;
+            }
+
+            let base = start + i * 2;
+
+            let lo = res[base] as u16;
+            let hi = res[base + 1] as u16;
+
+            keys.push(lo | (hi << 8));
+        }
+    }
+
+    Ok(keys)
+}
+
+// =====================================
+// Set Key
+// =====================================
+
+pub fn set_key(
+    profile: u8,
+    row: u8,
+    col: u8,
+    keycode: u16
+) -> Result<(), String> {
+
+    let dev = device()?;
+
+    let payload = [
+        profile,
+        row,
+        col,
+        (keycode & 0xFF) as u8,
+        (keycode >> 8) as u8,
+    ];
+
+    let packet = build_packet(
+        CMD_SET_KEY,
+        &payload
+    );
+
+    send_command(&dev, packet)?;
+    Ok(())
+}
+
+// =====================================
+// Encoder (FIXED)
+// =====================================
+
+pub fn get_encoder(profile: u8) -> Result<Vec<u16>, String> {
+
+    let dev = device()?;
+
+    let packet = build_packet(
+        CMD_GET_ENCODER,
+        &[profile]
+    );
+
+    let res = send_command(&dev, packet)?;
+
+    // Correct offsets:
+    // [cmd, profile, ccw_lo, ccw_hi, cw_lo, cw_hi, press_lo, press_hi]
+
+    let ccw =
+        res[2] as u16 |
+        ((res[3] as u16) << 8);
+
+    let cw =
+        res[4] as u16 |
+        ((res[5] as u16) << 8);
+
+    let press =
+        res[6] as u16 |
+        ((res[7] as u16) << 8);
+
+    Ok(vec![ccw, cw, press])
+}
+
+pub fn set_encoder(
+    profile: u8,
+    action: u8,
+    keycode: u16
+) -> Result<(), String> {
+
+    let dev = device()?;
+
+    let payload = [
+        profile,
+        action,
+        (keycode & 0xFF) as u8,
+        (keycode >> 8) as u8
+    ];
+
+    let packet = build_packet(
+        CMD_SET_ENCODER,
+        &payload
+    );
+
+    send_command(&dev, packet)?;
+    Ok(())
+}
+
+// =====================================
+// Macros (FIXED)
+// =====================================
+
+pub fn get_macro(slot: u8) -> Result<Vec<u16>, String> {
+
+    let dev = device()?;
+
+    let packet = build_packet(
+        CMD_GET_MACRO,
+        &[slot]
+    );
+
+    let res = send_command(&dev, packet)?;
+
+    // [cmd, macro_id, length, ...]
+    let count = res[2] as usize;
+
+    let mut out = Vec::new();
+
+    for i in 0..count {
+
+        let base = 3 + i * 2;
+
+        let lo = res[base] as u16;
+        let hi = res[base + 1] as u16;
+
+        out.push(lo | (hi << 8));
+    }
+
+    Ok(out)
+}
+
+pub fn set_macro(
+    slot: u8,
+    keycodes: Vec<u16>
+) -> Result<(), String> {
+
+    let dev = device()?;
+
+    let mut payload = vec![
+        slot,
+        keycodes.len() as u8
+    ];
+
+    for key in keycodes {
+        payload.push((key & 0xFF) as u8);
+        payload.push((key >> 8) as u8);
+    }
+
+    let packet = build_packet(
+        CMD_SET_MACRO,
+        &payload
+    );
+
+    send_command(&dev, packet)?;
+    Ok(())
+}
+
+// =====================================
+// OLED
+// =====================================
+
+pub fn set_oled_mode(mode: u8) -> Result<(), String> {
+
+    let dev = device()?;
+
+    let packet = build_packet(
+        CMD_SET_OLED_MODE,
+        &[mode]
+    );
+
+    send_command(&dev, packet)?;
+    Ok(())
+}
+
+pub fn send_oled_frame_chunk(
+    bytes: &[u8]
+) -> Result<(), String> {
+
+    let dev = device()?;
+
+    let packet = build_packet(
+        CMD_SET_OLED_FRAME,
+        bytes
+    );
+
+    send_command(&dev, packet)?;
+    Ok(())
+}
+
+// =====================================
+// Save / Reset
+// =====================================
+
+pub fn save_to_device() -> Result<(), String> {
+
+    let dev = device()?;
+
+    let packet = build_packet(
+        CMD_SAVE,
+        &[]
+    );
+
+    send_command(&dev, packet)?;
+    Ok(())
+}
+
+pub fn factory_reset() -> Result<(), String> {
+
+    let dev = device()?;
+
+    let packet = build_packet(
+        CMD_FACTORY_RESET,
+        &[]
+    );
+
+    send_command(&dev, packet)?;
+    Ok(())
 }
