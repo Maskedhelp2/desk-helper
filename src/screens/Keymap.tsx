@@ -6,7 +6,8 @@ function Keymap() {
   const keymap = keymaps[currentLayer];
 
   return (
-    <div className="flex justify-center items-center">
+    <div className="flex justify-center items-center relative z-10">
+
 
       <div className="flex flex-col gap-4">
 

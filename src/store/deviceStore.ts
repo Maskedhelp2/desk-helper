@@ -38,6 +38,8 @@ type DeviceState = {
   stopRecording: () => void;
   recordKey: (key: string) => void;
 
+  reorderSteps: (from: number, to: number) => void;
+
   hasUnsavedChanges: boolean;
   saveChanges: () => void;
 
@@ -234,6 +236,24 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
                         ...m,
                         steps: [...m.steps, { type: "key", key }],
                         }
+                      : m
+                ),
+            };
+        }),
+
+    reorderSteps: (from, to) =>
+        set((state) => {
+            const macro = state.macros.find(
+                (m) => m.id === state.selectedMacro
+            );
+            if (!macro) return state;
+            const updatedSteps = [...macro.steps];
+            const [moved] = updatedSteps.splice(from, 1);
+            updatedSteps.splice(to, 0, moved);
+            return {
+                macros: state.macros.map((m) =>
+                    m.id === state.selectedMacro
+                      ? { ...m, steps: updatedSteps }
                       : m
                 ),
             };

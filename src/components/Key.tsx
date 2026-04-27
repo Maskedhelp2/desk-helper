@@ -1,3 +1,4 @@
+import { setKey as sendKey } from "../utils/hid/protocol";
 import { useDeviceStore } from "../store/deviceStore";
 
 type Props = {
@@ -5,31 +6,51 @@ type Props = {
   index: number;
 };
 
-function formatLabel(label: string | undefined) {
-  if (!label) return "?";
-  return label.replace("KC_", "");
-}
-
 function Key({ label, index }: Props) {
-  const { selectedKey, setSelectedKey } = useDeviceStore();
+  const { setKey, setSelectedKey, selectedKey } = useDeviceStore();
+
+  const handleClick = () => {
+    // 1️⃣ select key
+    setSelectedKey(index);
+
+    // 2️⃣ TEMP default assign (optional)
+    setKey(index, "KC_A");
+
+    // 3️⃣ map index → row/col
+    const indexMap = [
+      [0, 1, 2, 3],
+      [4, 5, 6, 7],
+      [8, 9, 10],
+      [11, 12, 13, 14],
+      [15, 16, 17],
+    ];
+
+    let row = 0;
+    let col = 0;
+
+    for (let r = 0; r < indexMap.length; r++) {
+      const c = indexMap[r].indexOf(index);
+      if (c !== -1) {
+        row = r;
+        col = c;
+        break;
+      }
+    }
+
+    const keycode = 0x04; // TEMP KC_A
+    sendKey(row, col, keycode);
+  };
+
   const isSelected = selectedKey === index;
 
   return (
-    <div
-      onClick={() => setSelectedKey(index)}
-      className={`
-        flex items-center justify-center
-        rounded-xl cursor-pointer
-        transition-all duration-200
-        text-sm font-medium
-
-        ${isSelected ? "bg-blue-500 scale-105" : "bg-gray-700 hover:bg-gray-600"}
-        
-        w-16 h-16
-      `}
+    <button
+      onClick={handleClick}
+      className={`w-14 h-14 rounded text-white
+        ${isSelected ? "bg-blue-500" : "bg-gray-800 hover:bg-gray-600"}`}
     >
-      {formatLabel(label)}
-    </div>
+      {label}
+    </button>
   );
 }
 

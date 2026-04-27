@@ -1,10 +1,56 @@
 import { useDeviceStore } from "../store/deviceStore";
 import { useEffect } from "react";
+import {
+    DndContext,
+    useDraggable,
+    useDroppable,
+} from "@dnd-kit/core";
+
+function DraggableStep({ step, index }: any) {
+    const {
+    attributes,
+    listeners,
+    setNodeRef: setDragRef,
+    transform,
+  } = useDraggable({
+    id: index,
+  });
+
+  const { setNodeRef: setDropRef } = useDroppable({
+    id: index,
+  });
+
+  const style = {
+    transform: transform
+      ? `translate(${transform.x}px, ${transform.y}px)`
+      : undefined,
+  };
+  return (
+    <div
+      ref={(node) => {
+        setDragRef(node);
+        setDropRef(node);
+      }}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className="bg-gray-700 p-3 rounded flex justify-between items-center cursor-grab"
+    >
+      <span>
+        {step.type === "key"
+          ? `Key: ${step.key}`
+          : `Delay: ${step.ms} ms`}
+      </span>
+    </div>
+  );
+
+}
 
 function Macros() {
   const {
     macros,
     selectedMacro,
+    reorderSteps,
     addMacro,
     deleteMacro,
     selectMacro,
@@ -29,6 +75,10 @@ function Macros() {
         window.removeEventListener("keydown", handleKeyDown);
     };
 }, [isRecording]);
+
+const { setNodeRef } = useDroppable({
+    id: "drop-zone",
+});
 
   return (
     <div className="flex h-full gap-4">
@@ -137,25 +187,28 @@ function Macros() {
                 </p>
               )}
 
-              {currentMacro.steps.map((step, index) => (
-                <div
-                  key={index}
-                  className="flex justify-between items-center bg-gray-700 p-3 rounded"
-                >
-                  <span>
-                    {step.type === "key"
-                      ? `Key: ${step.key}`
-                      : `Delay: ${step.ms} ms`}
-                  </span>
+              <DndContext
+  onDragEnd={(event) => {
+    const { active, over } = event;
 
-                  <button
-                    onClick={() => removeStep(index)}
-                    className="text-red-400 hover:text-red-600"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
+    if (!over) return;
+
+    const from = active.id as number;
+    const to = over.id as number;
+
+    console.log("REORDER:", from, "->", to);
+
+    if (from !== to) {
+      reorderSteps(from, to);
+    }
+  }}
+>
+  <div className="space-y-2">
+    {currentMacro.steps.map((step, index) => (
+      <DraggableStep key={index} step={step} index={index} />
+    ))}
+  </div>
+</DndContext>
             </div>
           </>
         )}
