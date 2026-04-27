@@ -1,0 +1,6 @@
+[dependencies]
+tauri = { version = "2", features = [] }
+
+hidapi = "2.6"
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
