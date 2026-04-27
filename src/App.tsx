@@ -13,6 +13,7 @@ import Firmware from "./screens/Firmware";
 
 function App() {
   const location = useLocation();
+  const isMacrosPage = location.pathname === "/macros";
 
   const {
     currentLayer,
@@ -34,7 +35,10 @@ function App() {
   const selectedValue =
     selectedKey !== null ? keymap[selectedKey] || "KC_NO" : undefined;
 
-  const [activeTab, setActiveTab] = useState<keyof typeof keyCategories>("standard");
+  const [activeTab, setActiveTab] =
+    useState<keyof typeof keyCategories>("standard");
+
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const menuItems = [
     { name: "Keymap", path: "/" },
@@ -44,7 +48,6 @@ function App() {
     { name: "Profiles", path: "/profiles" },
     { name: "Firmware", path: "/firmware" },
   ];
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   return (
     <div className="flex h-screen bg-gray-900 text-white">
@@ -62,13 +65,11 @@ function App() {
                 <li key={item.name}>
                   <Link to={item.path}>
                     <div
-                      className={`
-                        px-3 py-2 rounded-lg cursor-pointer
-                        transition-all duration-200
-                        ${isActive
+                      className={`px-3 py-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                        isActive
                           ? "bg-blue-500 text-white"
-                          : "hover:bg-gray-700 text-gray-300"}
-                      `}
+                          : "hover:bg-gray-700 text-gray-300"
+                      }`}
                     >
                       {item.name}
                     </div>
@@ -119,9 +120,7 @@ function App() {
             <button
               onClick={saveChanges}
               className={`px-3 py-1 rounded ${
-                hasUnsavedChanges
-                  ? "bg-blue-500"
-                  : "bg-gray-600"
+                hasUnsavedChanges ? "bg-blue-500" : "bg-gray-600"
               }`}
             >
               Save Changes
@@ -129,7 +128,7 @@ function App() {
           </div>
         </div>
 
-        {/* LAYERS + RESET */}
+        {/* LAYERS */}
         <div className="flex gap-3 items-center">
           {layers.map((layer, i) => (
             <button
@@ -147,142 +146,147 @@ function App() {
 
           <button
             onClick={() => setShowResetConfirm(true)}
-              className="ml-4 px-3 py-1 bg-red-600 hover:bg-red-500 rounded text-sm"
-            >
-              Reset Layer
+            className="ml-4 px-3 py-1 bg-red-600 hover:bg-red-500 rounded text-sm"
+          >
+            Reset Layer
           </button>
         </div>
 
         {/* MAIN GRID */}
         <div className="flex flex-1 gap-6">
 
-          {/* LEFT PANEL (ROUTES) */}
-          <div className="flex-1 bg-gray-800 rounded-xl p-6 flex flex-col">
-
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h2 className="text-lg font-semibold">Editor</h2>
-                <p className="text-sm text-gray-400">
-                  Configure your device
-                </p>
-              </div>
-
-              <div className="flex gap-2">
-                <button className="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600">
-                  Import
-                </button>
-                <button className="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600">
-                  Export
-                </button>
-              </div>
+          {isMacrosPage ? (
+            // ✅ MACROS FULL SCREEN
+            <div className="flex-1 bg-gray-800 rounded-xl p-6">
+              <Macros />
             </div>
+          ) : (
+            <>
+              {/* LEFT PANEL */}
+              <div className="flex-1 bg-gray-800 rounded-xl p-6 flex flex-col">
 
-            <div className="flex-1 flex items-center justify-center">
-              <div className="bg-gray-900 p-6 rounded-xl shadow-inner w-full h-full flex items-center justify-center">
-                <Routes>
-                  <Route path="/" element={<Keymap />} />
-                  <Route path="/encoder" element={<Encoder />} />
-                  <Route path="/oled" element={<OLED />} />
-                  <Route path="/macros" element={<Macros />} />
-                  <Route path="/profiles" element={<Profiles />} />
-                  <Route path="/firmware" element={<Firmware />} />
-                </Routes>
-              </div>
-            </div>
-          </div>
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h2 className="text-lg font-semibold">Editor</h2>
+                    <p className="text-sm text-gray-400">
+                      Configure your device
+                    </p>
+                  </div>
 
-          {/* CENTER PANEL */}
-          <div className="flex-1 bg-gray-800 rounded-xl flex flex-col justify-center items-center p-6">
-
-            {selectedKey === null ? (
-              <>
-                <div className="text-5xl mb-4 opacity-50">⌨️</div>
-                <h3 className="text-lg font-medium">No key selected</h3>
-                <p className="text-sm text-gray-400 mt-2 text-center max-w-xs">
-                  Select any key to view details
-                </p>
-              </>
-            ) : (
-              <>
-                <h3 className="mb-3 text-gray-400">Selected Key</h3>
-
-                <div className="w-24 h-24 bg-gray-700 rounded-2xl flex items-center justify-center text-2xl mb-4 shadow-md">
-                  {selectedValue?.replace("KC_", "")}
-                </div>
-
-                <div className="bg-gray-900 px-4 py-2 rounded-lg text-sm text-blue-400">
-                  {selectedValue}
-                </div>
-
-                <p className="text-xs text-gray-500 mt-3">
-                  Active on Layer {currentLayer}
-                </p>
-              </>
-            )}
-          </div>
-
-          {/* RIGHT PANEL */}
-          <div className="w-80 bg-gray-800 p-6 rounded-xl">
-            <h2 className="text-lg font-semibold mb-4">Key Settings</h2>
-
-            {selectedKey !== null ? (
-              <div className="space-y-6">
-
-                {/* Tabs */}
-                <div className="flex gap-2">
-                  {Object.keys(keyCategories).map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab as any)}
-                      className={`px-2 py-1 rounded ${
-                        activeTab === tab
-                          ? "bg-blue-500"
-                          : "bg-gray-700 hover:bg-gray-600"
-                      }`}
-                    >
-                      {tab}
+                  <div className="flex gap-2">
+                    <button className="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600">
+                      Import
                     </button>
-                  ))}
+                    <button className="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600">
+                      Export
+                    </button>
+                  </div>
                 </div>
 
-                {/* Dropdown */}
-                <div>
-                  <p className="text-sm text-gray-400 mb-1">Key Action</p>
-                  <select
-                    className="w-full p-2 bg-gray-700 rounded"
-                    value={selectedValue || "KC_NO"}
-                    onChange={(e) => setKey(selectedKey!, e.target.value)}
-                  >
-                    {(keyCategories[activeTab] || []).map((k) => (
-                      <option key={k} value={k}>
-                        {k}
-                      </option>
-                    ))}
-                  </select>
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="bg-gray-900 p-6 rounded-xl shadow-inner w-full h-full flex items-center justify-center">
+                    <Routes>
+                      <Route path="/" element={<Keymap />} />
+                      <Route path="/encoder" element={<Encoder />} />
+                      <Route path="/oled" element={<OLED />} />
+                      <Route path="/profiles" element={<Profiles />} />
+                      <Route path="/firmware" element={<Firmware />} />
+                    </Routes>
+                  </div>
                 </div>
-
-                {/* Description */}
-                <div>
-                  <p className="text-sm text-gray-400">Description</p>
-                  <p className="text-sm text-blue-400 mt-1">
-                    {getKeyDescription(selectedValue)}
-                  </p>
-                </div>
-
               </div>
-            ) : (
-              <p className="text-gray-400">Select a key</p>
-            )}
-          </div>
 
+              {/* CENTER PANEL */}
+              <div className="flex-1 bg-gray-800 rounded-xl flex flex-col justify-center items-center p-6">
+                {selectedKey === null ? (
+                  <>
+                    <div className="text-5xl mb-4 opacity-50">⌨️</div>
+                    <h3 className="text-lg font-medium">No key selected</h3>
+                    <p className="text-sm text-gray-400 mt-2 text-center max-w-xs">
+                      Select any key to view details
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="mb-3 text-gray-400">Selected Key</h3>
+
+                    <div className="w-24 h-24 bg-gray-700 rounded-2xl flex items-center justify-center text-2xl mb-4 shadow-md">
+                      {selectedValue?.replace("KC_", "")}
+                    </div>
+
+                    <div className="bg-gray-900 px-4 py-2 rounded-lg text-sm text-blue-400">
+                      {selectedValue}
+                    </div>
+
+                    <p className="text-xs text-gray-500 mt-3">
+                      Active on Layer {currentLayer}
+                    </p>
+                  </>
+                )}
+              </div>
+
+              {/* RIGHT PANEL */}
+              <div className="w-80 bg-gray-800 p-6 rounded-xl">
+                <h2 className="text-lg font-semibold mb-4">Key Settings</h2>
+
+                {selectedKey !== null ? (
+                  <div className="space-y-6">
+
+                    <div className="flex gap-2">
+                      {Object.keys(keyCategories).map((tab) => (
+                        <button
+                          key={tab}
+                          onClick={() => setActiveTab(tab as any)}
+                          className={`px-2 py-1 rounded ${
+                            activeTab === tab
+                              ? "bg-blue-500"
+                              : "bg-gray-700 hover:bg-gray-600"
+                          }`}
+                        >
+                          {tab}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-gray-400 mb-1">Key Action</p>
+                      <select
+                        className="w-full p-2 bg-gray-700 rounded"
+                        value={selectedValue || "KC_NO"}
+                        onChange={(e) =>
+                          setKey(selectedKey!, e.target.value)
+                        }
+                      >
+                        {(keyCategories[activeTab] || []).map((k) => (
+                          <option key={k} value={k}>
+                            {k}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-gray-400">Description</p>
+                      <p className="text-sm text-blue-400 mt-1">
+                        {getKeyDescription(selectedValue)}
+                      </p>
+                    </div>
+
+                  </div>
+                ) : (
+                  <p className="text-gray-400">Select a key</p>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
+
+      {/* RESET MODAL */}
       {showResetConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-xl shadow-xl w-80">
-            <h2 className="text-lg font-semibold mb-3">
-              Reset Layer?
-            </h2>
+            <h2 className="text-lg font-semibold mb-3">Reset Layer?</h2>
             <p className="text-sm text-gray-400 mb-5">
               This will clear all keys in current layer.
             </p>

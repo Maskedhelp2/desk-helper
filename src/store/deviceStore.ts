@@ -25,6 +25,14 @@ type DeviceState = {
   hoveredKey: number | null;
   setHoveredKey: (index: number | null) => void;
 
+  macros: Macro[];
+  selectedMacro: number | null;
+  addMacro: () => void;
+  deleteMacro: (id: number) => void;
+  selectMacro: (id: number) => void;
+  addStep: (step: MacroStep) => void;
+  removeStep: (index: number) => void;
+
   hasUnsavedChanges: boolean;
   saveChanges: () => void;
 
@@ -63,7 +71,23 @@ type DeviceState = {
   setOledLogo: (data: string | null) => void;
   setOledProfileMode: (val: boolean) => void;
   setOledEffect: (effect: "static" | "pulse" | "scroll") => void;
+
+
+
+
 };
+
+type MacroStep =
+  | { type: "key"; key: string }
+  | { type: "delay"; ms: number };
+
+type Macro = {
+    id: number;
+    name: string;
+    steps: MacroStep[];
+};
+
+
 
 const STORAGE_KEY = "numpad-app-data";
 
@@ -134,6 +158,55 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
 
   hoveredKey: null,
   setHoveredKey: (index) => set({ hoveredKey: index }),
+
+  macros: [],
+  selectedMacro: null,
+  addMacro: () =>
+    set((state) => {
+        const newMacro: Macro = {
+            id: Date.now(),
+            name: `Macro ${state.macros.length + 1}`,
+            steps: [],
+        };
+
+        return {
+            macros: [...state.macros, newMacro],
+            selectedMacro: newMacro.id,
+        };
+    }),
+
+    deleteMacro: (id) =>
+        set((state) => ({
+            macros: state.macros.filter((m) => m.id !== id),
+            selectedMacro:
+              state.selectedMacro === id ? null : state.selectedMacro,
+        })),
+
+    selectMacro: (id) =>
+    set(() => ({
+      selectedMacro: id,
+    })),
+
+    addStep: (step) =>
+    set((state) => ({
+      macros: state.macros.map((m) =>
+        m.id === state.selectedMacro
+          ? { ...m, steps: [...m.steps, step] }
+          : m
+      ),
+    })),
+
+    removeStep: (index) =>
+    set((state) => ({
+      macros: state.macros.map((m) =>
+        m.id === state.selectedMacro
+          ? {
+              ...m,
+              steps: m.steps.filter((_, i) => i !== index),
+            }
+          : m
+      ),
+    })),
 
   /* SAVE STATE */
   hasUnsavedChanges: false,
@@ -281,6 +354,8 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
       },
       hasUnsavedChanges: true,
     })),
+
+  
 
   /* OLED */
   oled: {
