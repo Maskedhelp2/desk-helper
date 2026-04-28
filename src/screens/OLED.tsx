@@ -154,8 +154,12 @@ function OLED() {
       )}
 
       {/* Preview */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <OledPreview />
+      <div className="mt-6 flex justify-center">
+        <div className="bg-black p-4 rounded-xl border border-gray-700 shadow-inner">
+            <OledPreview />
+
+        </div>
+        
       </div>
 
     </div>

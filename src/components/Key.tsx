@@ -45,11 +45,19 @@ function Key({ label, index }: Props) {
   return (
     <button
       onClick={handleClick}
-      className={`w-14 h-14 rounded text-white ${
+      className={`w-14 h-14 rounded-xl text-sm font-medium transition-all duration-200 
+    flex items-center justify-center ${
+        isSelected
+          ? "ring-2 ring-blue-400 scale-105 shadow-lg"
+          : ""
+    }
+    ${
         label.startsWith("MACRO_")
-          ? "bg-purple-600 hover:bg-purple-500"
-          : "bg-gray-800 hover:bg-gray-600"
-      }`}
+          ? "bg-gradient-to-br from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400"
+          : "bg-gray-800 hover:bg-gray-700"
+      }
+      active:scale-95
+      `}
     >
       {(() => {
         if (label.startsWith("MACRO_")) {

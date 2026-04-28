@@ -57,7 +57,7 @@ function App() {
   ];
 
   return (
-    <div className="flex h-screen bg-gray-900 text-white">
+    <div className="flex h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-white">
 
       {/* SIDEBAR */}
       <div className="w-64 bg-gray-800 p-5 flex flex-col justify-between">
@@ -160,17 +160,16 @@ function App() {
         </div>
 
         {/* MAIN GRID */}
-        <div className="flex flex-1 gap-6">
-
+        <div className="flex flex-1 gap-6 items-center justify-center">
           {isMacrosPage ? (
             // ✅ MACROS FULL SCREEN
-            <div className="flex-1 bg-gray-800 rounded-xl p-6">
+            <div className="flex-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg justify-center">
               <Macros />
             </div>
           ) : (
             <>
               {/* LEFT PANEL */}
-              <div className="flex-1 bg-gray-800 rounded-xl p-6 flex flex-col">
+              <div className="flex-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg justify-center">
 
                 <div className="flex justify-between items-center mb-4">
                   <div>
@@ -204,7 +203,7 @@ function App() {
               </div>
 
               {/* CENTER PANEL */}
-              <div className="flex-1 bg-gray-800 rounded-xl flex flex-col justify-center items-center p-6">
+              <div className="flex-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg flex flex-col justify-center items-center p-6">
                 {selectedKey === null ? (
                   <>
                     <div className="text-5xl mb-4 opacity-50">⌨️</div>
@@ -233,7 +232,7 @@ function App() {
               </div>
 
               {/* RIGHT PANEL */}
-              <div className="w-80 bg-gray-800 p-6 rounded-xl">
+              <div className="w-80 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg p-6">
                 <h2 className="text-lg font-semibold mb-4">Key Settings</h2>
 
                 {selectedKey !== null ? (
