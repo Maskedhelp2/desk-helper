@@ -62,7 +62,7 @@ function Key({ label, index }: Props) {
       {(() => {
         if (label.startsWith("MACRO_")) {
             const id = label.replace("MACRO_", "");
-            const macro = macros.find((m) => m.id.toString() === id);
+            const macro = macros.find((m: any) => m.id.toString() === id);
             return macro ? macro.name : "Macro";
         }
         return label.replace("KC_", "");
