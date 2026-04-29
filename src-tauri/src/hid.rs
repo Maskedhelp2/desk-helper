@@ -1,4 +1,3 @@
-
 use hidapi::{HidApi, HidDevice};
 
 pub const VID: u16 = 0xFEED;
@@ -8,9 +7,12 @@ pub fn find_device() -> Option<HidDevice> {
     let api = HidApi::new().ok()?;
 
     for dev in api.device_list() {
-        if dev.vendor_id() == VID && dev.product_id() == PID {
-            return dev.open_device(&api).ok();
-        }
+        if dev.vendor_id() == VID
+           && dev.product_id() == PID
+           && dev.usage_page() == 0xFF60
+        {
+                return dev.open_device(&api).ok();
+         }
     }
 
     None
@@ -49,11 +51,12 @@ pub const CMD_SET_PROFILE: u8 = 0x10;
 
 pub fn build_packet(cmd: u8, payload: &[u8]) -> [u8; 32] {
     let mut packet = [0u8; 32];
+
     packet[0] = cmd;
 
-    for (i, byte) in payload.iter().enumerate() {
+    for (i, &b) in payload.iter().enumerate() {
         if i + 1 < 32 {
-            packet[i + 1] = *byte;
+            packet[i + 1] = b;
         }
     }
 
@@ -77,6 +80,11 @@ pub fn send_command(
         return Err("No response from device".into());
     }
 
+    // 🔥 IMPORTANT CHECK
+    if response[1] == 0xFF {
+        return Err("Device returned error (invalid command or args)".into());
+    }
+
     Ok(response)
 }
 
@@ -90,10 +98,16 @@ fn device() -> Result<HidDevice, String> {
 
 pub fn get_version() -> Result<String, String> {
     let dev = device()?;
-    let packet = build_packet(CMD_GET_VERSION, &[]);
-    let res = send_command(&dev, packet)?;
 
-    Ok(format!("{}.{}", res[1], res[2]))
+    let payload = [0u8; 31]; // IMPORTANT
+    let packet = build_packet(CMD_GET_VERSION, &payload);
+
+    let response = send_command(&dev, packet)?;
+
+    let major = response[1];
+    let minor = response[2];
+
+    Ok(format!("{}.{}", major, minor))
 }
 
 // =====================================
@@ -102,9 +116,13 @@ pub fn get_version() -> Result<String, String> {
 
 pub fn get_profile() -> Result<u8, String> {
     let dev = device()?;
-    let packet = build_packet(CMD_GET_PROFILE, &[]);
-    let res = send_command(&dev, packet)?;
-    Ok(res[1])
+
+    let payload = [0u8; 31]; // IMPORTANT
+    let packet = build_packet(CMD_GET_PROFILE, &payload);
+
+    let response = send_command(&dev, packet)?;
+
+    Ok(response[1])
 }
 
 pub fn set_profile(profile: u8) -> Result<(), String> {
@@ -213,11 +231,11 @@ pub fn set_key(
     let dev = device()?;
 
     let payload = [
-        profile,
-        row,
-        col,
-        (keycode & 0xFF) as u8,
-        (keycode >> 8) as u8,
+    row,
+    col,
+    profile,   // 👈 moved here (correct position)
+    (keycode & 0xFF) as u8,
+    (keycode >> 8) as u8,
     ];
 
     let packet = build_packet(
@@ -392,13 +410,10 @@ pub fn send_oled_frame_chunk(
 // =====================================
 
 pub fn save_to_device() -> Result<(), String> {
-
     let dev = device()?;
 
-    let packet = build_packet(
-        CMD_SAVE,
-        &[]
-    );
+    let payload = [0u8; 31]; // IMPORTANT
+    let packet = build_packet(CMD_SAVE, &payload);
 
     send_command(&dev, packet)?;
     Ok(())
