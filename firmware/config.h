@@ -1,21 +1,31 @@
 #pragma once
 
+// Matrix size
+#define MATRIX_ROWS 4
+#define MATRIX_COLS 5
 
-#define EEPROM_SIZE 512
+// Encoder
+#define ENCODER_RESOLUTION 4
 
-#define MATRIX_ROW_PINS { GP10, GP11, GP12, GP13 }
-#define MATRIX_COL_PINS { GP6, GP7, GP8, GP9, GP14 }
+// Encoder button
+#define ENCODER_BUTTON_PIN GP15
 
-#define DIODE_DIRECTION COL2ROW
+// RAW HID
+#define RAW_USAGE_PAGE 0xFF60
+#define RAW_USAGE_ID   0x61
 
-#define ENCODER_A_PINS { GP2 }
-#define ENCODER_B_PINS { GP3 }
-
-#define I2C_DRIVER I2CD1
-#define I2C1_SDA_PIN GP4
-#define I2C1_SCL_PIN GP5
-#define I2C1_CLOCK_SPEED 100000
-
+// OLED SPI
+#define OLED_DRIVER_ENABLE
 #define OLED_DISPLAY_128X64
-#define OLED_DISPLAY_ADDRESS 0x3C
+
+#define OLED_DC_PIN GP4
+#define OLED_CS_PIN GP5
+#define OLED_RST_PIN GP16
+
+#define SPI_DRIVER SPID0
+#define SPI_SCK_PIN GP18
+#define SPI_MOSI_PIN GP19
+
+// Optional
 #define OLED_TIMEOUT 0
+#define OLED_BRIGHTNESS 255

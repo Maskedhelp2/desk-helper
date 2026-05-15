@@ -96,7 +96,7 @@ static const uint16_t profiles[NUM_PROFILES][ROWS][COLS] = {
         {KC_INS,  KC_DEL,  KC_BSPC, KC_ENT,  KC_NO},
         {KC_TAB,  KC_ESC,  KC_NO,   KC_NO,   KC_NO}
     },
-
+    cd
     // 2 - Media
     {
         {KC_MPLY, KC_MSTP, KC_MPRV, KC_MNXT, KC_NO},
@@ -437,14 +437,21 @@ void raw_hid_receive(uint8_t *data, uint8_t length) {
         // 0x03  SET_KEY -> [cmd, row, col, 0, key_lo, key_hi]
         case CMD_SET_KEY:
             HID_NEED(6);
-            if (data[1] < ROWS && data[2] < COLS) {
-                dynamic_keys[current_profile][data[1]][data[2]] =
+
+            uint8_t row = data[1];
+            uint8_t col = data[2];
+            uint8_t profile = data[3];   // 👈 FIX: read profile
+
+            if (row < ROWS && col < COLS && profile < NUM_PROFILES) {
+                dynamic_keys[profile][row][col] =
                     ((uint16_t)data[5] << 8) | data[4];
-                save_to_eeprom();
+
+                save_to_eeprom();  // optional but good
                 response[1] = 0x00;
             } else {
                 response[1] = 0xFF;
             }
+
             raw_hid_send(response, sizeof(response));
             break;
 

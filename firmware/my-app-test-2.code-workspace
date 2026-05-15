@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../Downloads/frontend-2"
+		}
+	],
+	"settings": {
+		"python.languageServer": "Pylance"
+	}
+}
